@@ -1,6 +1,7 @@
 """Slack bot over REST polling of its direct messages (no public URL, no Socket Mode)."""
 from __future__ import annotations
-import os, time
+import os, time, httpx
+from .. import media
 from . import Channel, Message
 from ._http import call
 
@@ -32,8 +33,18 @@ class Slack(Channel):
             o = self.oldest.get(im["id"], self.start)
             for m in reversed(_api("conversations.history", params={"channel": im["id"], "oldest": o, "limit": 20}).get("messages", [])):
                 self.oldest[im["id"]] = m["ts"]
-                if m.get("user") == im["user"] and not m.get("bot_id") and m.get("text"): out.append(Message("slack", im["user"], m["text"]))
+                if m.get("user") != im["user"] or m.get("bot_id"): continue
+                    text = media.join(m.get("text"), *[self._file(f) for f in m.get("files", [])])
+                    if text: out.append(Message("slack", im["user"], text))
         return out
+
+    def _file(self, f):
+        """Slack voice clips and uploads (needs the files:read scope)."""
+        try:
+            r = httpx.get(f["url_private_download"], headers={"Authorization": "Bearer " + os.environ["SLACK_BOT_TOKEN"]},
+                          timeout=120, follow_redirects=False, trust_env=False); r.raise_for_status()
+            return media.ingest(r.content, f.get("name", "file"), f.get("mimetype", ""), "slack")
+        except Exception as e: return f"[attachment received but download failed: {type(e).__name__}]"
 
     def send(self, to, text):
         for i in range(0, len(text), 3500):

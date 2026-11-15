@@ -1,6 +1,7 @@
 """Matrix client-server API via /sync long polling. Works with any homeserver, E2E-unencrypted DM rooms only."""
 from __future__ import annotations
-import os, time, urllib.parse
+import os, time, urllib.parse, httpx
+from .. import media
 from . import Channel, Message
 from ._http import call
 
@@ -30,8 +31,20 @@ class Matrix(Channel):
             for ev in room.get("timeline", {}).get("events", []):
                 if ev.get("type") != "m.room.message" or ev["sender"] == self.me: continue
                 self.rooms[ev["sender"].lower()] = rid
-                if not first and ev.get("content", {}).get("msgtype") == "m.text": out.append(Message("matrix", ev["sender"].lower(), ev["content"]["body"]))
+                if first: continue
+                c = ev.get("content", {})
+                if c.get("msgtype") == "m.text": out.append(Message("matrix", ev["sender"].lower(), c["body"]))
+                elif c.get("msgtype") in ("m.audio", "m.file", "m.video") and ev["sender"].lower() in self.allowed:
+                    out.append(Message("matrix", ev["sender"].lower(), self._media(c)))
         return out
+
+    def _media(self, c):
+        try:
+            server, mid = c["url"].removeprefix("mxc://").split("/", 1)
+            r = httpx.get(os.environ["MATRIX_HOMESERVER"].rstrip("/") + f"/_matrix/client/v1/media/download/{server}/{mid}",
+                          headers=self._h(), timeout=120, follow_redirects=False, trust_env=False); r.raise_for_status()
+            return media.ingest(r.content, c.get("body", "file"), (c.get("info") or {}).get("mimetype", ""), "matrix")
+        except Exception as e: return f"[attachment received but download failed: {type(e).__name__}]"
 
     def send(self, to, text):
         rid = self.rooms.get(to.lower()) or call("POST", self._u("/createRoom"), headers=self._h(), json={"invite": [to], "is_direct": True})["room_id"]

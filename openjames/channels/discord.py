@@ -1,6 +1,7 @@
 """Discord bot over REST polling of one DM with the allow-listed user (no gateway/websocket)."""
 from __future__ import annotations
-import os
+import os, httpx
+from .. import media
 from . import Channel, Message
 from ._http import call
 
@@ -35,8 +36,16 @@ class Discord(Channel):
                 self.after[ch] = max(msgs, key=lambda m: int(m["id"]))["id"]; continue
             for m in sorted(msgs, key=lambda m: int(m["id"])):
                 self.after[ch] = m["id"]
-                if m["author"]["id"] == uid and m.get("content"): out.append(Message("discord", uid, m["content"]))
+                if m["author"]["id"] != uid: continue
+                text = media.join(m.get("content"), *[self._attach(a) for a in m.get("attachments", [])])
+                if text: out.append(Message("discord", uid, text))
         return out
+
+    def _attach(self, a):
+        try:
+            r = httpx.get(a["url"], timeout=120, follow_redirects=False, trust_env=False); r.raise_for_status()
+            return media.ingest(r.content, a.get("filename", "file"), a.get("content_type", ""), "discord")
+        except Exception as e: return f"[attachment received but download failed: {type(e).__name__}]"
 
     def send(self, to, text):
         ch = self._dm(to)

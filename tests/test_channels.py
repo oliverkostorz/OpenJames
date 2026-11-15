@@ -84,3 +84,21 @@ def nostt(p): raise RuntimeError("no speech-to-text backend")
 media.transcribe = nostt
 t = tg.Telegram(); t.bind(["42"]); assert "not transcribed" in t.poll()[0].text
 print("voice ok")
+
+# voice memos / attachments on the non-Telegram channels (STT backend absent -> honest note, file still saved)
+import json, subprocess
+from openjames import media
+from email.message import EmailMessage as _EM
+os.environ.pop("OPENAI_API_KEY", None); os.environ["OPENJAMES_STT"] = "whisper-cli-missing"
+media.transcribe = lambda p: "hello from voice"
+em_ = _EM(); em_["From"] = "me@x.io"; em_["Authentication-Results"] = "mx; dmarc=pass"; em_.set_content("see audio")
+em_.add_attachment(b"RIFFxx", maintype="audio", subtype="ogg", filename="memo.ogg")
+txt = em.attachments_of(em_); assert "voice memo, transcribed" in txt and "hello from voice" in txt, txt
+em_.add_attachment(b"%PDF", maintype="application", subtype="pdf", filename="a.pdf"); assert "[file received:" in em.attachments_of(em_)
+from openjames.channels import signal as sg
+import tempfile as _tf
+ad = pathlib.Path(_tf.mkdtemp()); (ad / "att1").write_bytes(b"x"); os.environ["SIGNAL_ATTACHMENT_DIR"] = str(ad)
+s = sg.Signal(); s.allowed = ["+49"]
+assert "hello from voice" in s._attachments({"attachments": [{"id": "att1", "contentType": "audio/aac"}]}, "+49")
+assert s._attachments({"attachments": [{"id": "att1", "contentType": "audio/aac"}]}, "+00") is None
+print("media channels ok")

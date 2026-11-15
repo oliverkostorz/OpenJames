@@ -1,6 +1,8 @@
 """Twilio REST polling: one account serves SMS and WhatsApp, no public webhook or tunnel needed."""
 from __future__ import annotations
 import datetime as dt, os
+import httpx
+from .. import media
 from . import Channel, Message
 from ._http import call
 
@@ -28,8 +30,22 @@ class TwilioChannel(Channel):
             self.seen.add(m["sid"])
             sent = dt.datetime.strptime(m["date_sent"], "%a, %d %b %Y %H:%M:%S %z") if m.get("date_sent") else self.started
             if sent < self.started: continue            # history from before the listener started
-            out.append(Message(self.name, m["from"].removeprefix(self.prefix), m.get("body") or ""))
+            sender = m["from"].removeprefix(self.prefix)
+            text = m.get("body") or ""
+            if int(m.get("num_media") or 0) and sender in self.allowed: text = media.join(text, self._media(m["sid"]))
+            out.append(Message(self.name, sender, text))
         return out
+
+    def _media(self, sid):
+        """WhatsApp voice notes / MMS: Twilio lists them as sub-resources of the message."""
+        try:
+            notes = []
+            for md in call("GET", f"{self._base()}/Messages/{sid}/Media.json", auth=self._auth()).get("media_list", []):
+                r = httpx.get("https://api.twilio.com" + md["uri"].removesuffix(".json"), auth=self._auth(), timeout=120, follow_redirects=True, trust_env=False)
+                r.raise_for_status()
+                notes.append(media.ingest(r.content, "media." + md.get("content_type", "").split("/")[-1].split(";")[0], md.get("content_type", ""), self.name))
+            return media.join(*notes)
+        except Exception as e: return f"[attachment received but download failed: {type(e).__name__}]"
 
     def send(self, to, text):
         for i in range(0, len(text), 1500):

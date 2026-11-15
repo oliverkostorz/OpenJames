@@ -1,6 +1,7 @@
 from __future__ import annotations
 import email as _email, email.utils, imaplib, os, smtplib
 from email.message import EmailMessage
+from .. import media
 from . import Channel, Message
 
 # Zero-config hosts for common providers, derived from the address. Override with EMAIL_IMAP_HOST / EMAIL_SMTP_HOST.
@@ -24,6 +25,17 @@ def hosts(address: str, env=os.environ) -> tuple[str, str]:
 def authenticated(msg) -> bool:
     """True only if the receiving server reports a DMARC pass (aligned SPF/DKIM); otherwise From is spoofable."""
     return any("dmarc=pass" in h.lower() for h in msg.get_all("Authentication-Results", []))
+
+
+def attachments_of(msg) -> str:
+    """Voice memos / audio files attached to a (DMARC-verified) mail become transcripts, other files are saved and noted."""
+    notes = []
+    for p in msg.walk():
+        name = p.get_filename()
+        if not name: continue
+        try: notes.append(media.ingest(p.get_payload(decode=True) or b"", name, p.get_content_type(), "mail"))
+        except Exception as e: notes.append(f"[attachment {name} unreadable: {type(e).__name__}]")
+    return media.join(*notes)
 
 
 def text_of(msg) -> str:
@@ -56,7 +68,8 @@ class Email(Channel):
         for num in box.search(None, "UNSEEN")[1][0].split():
             msg = _email.message_from_bytes(box.fetch(num, "(RFC822)")[1][0][1])
             if not authenticated(msg): continue          # spoofed or unverifiable: drop
-            out.append(Message("email", _email.utils.parseaddr(msg["From"])[1].lower(), text_of(msg)))
+            sender = _email.utils.parseaddr(msg["From"])[1].lower()
+            out.append(Message("email", sender, media.join(text_of(msg), attachments_of(msg) if sender in self.allowed else "")))
         box.logout()
         return out
 

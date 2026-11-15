@@ -56,3 +56,20 @@ def describe(path, kind="voice memo") -> str:
     except Exception as e:
         return f"[{kind} received but not transcribed: {e if isinstance(e, RuntimeError) else type(e).__name__}. File: {path}]"
     return f"[{kind}, transcribed]\n{t}" if t else f"[{kind} received, no speech detected. File: {path}]"
+
+
+def ingest(data: bytes, name: str, mime: str = "", prefix: str = "att", kind: str | None = None) -> str:
+    """Save downloaded bytes under inbox/files/ and return task text (transcript for audio, a note for other files)."""
+    import time
+    from .paths import INBOX
+    if len(data) > 50_000_000: return f"[attachment {name} skipped: too large]"
+    dest = INBOX / "files"; dest.mkdir(parents=True, exist_ok=True)
+    stem = "".join(c if c.isalnum() or c in "-_" else "_" for c in pathlib.Path(name).stem)[:40] or "file"
+    path = dest / f"{prefix}-{int(time.time())}-{stem}{pathlib.Path(name).suffix[:8]}"
+    path.write_bytes(data)
+    if is_audio(name, mime): return describe(path, kind or "voice memo")
+    return f"[file received: {path}]"
+
+
+def join(*parts) -> str:
+    return "\n\n".join(p for p in parts if p)
