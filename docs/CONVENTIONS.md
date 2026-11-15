@@ -5,3 +5,4 @@
 4. Outbound text passes `guards.scrub`; allow-listed senders only.
 5. Stubs set `implemented = False` and say so in the wizard.
 6. Add a test under `tests/` (plain assert script) and a line to README's status table.
+7. Capabilities are tools. Never ship a feature that only a CLI backend can use; API backends must reach it through the tool loop.

@@ -23,12 +23,20 @@ def _cli(cmd: list[str], stdin: str, name: str) -> str:
     return p.stdout.strip()
 
 
-def run_chain(order: list[str], system: str, prompt: str) -> tuple[str, str]:
-    """Try backends in order; return (backend_name, reply)."""
+CLI_TOOL_HINT = ("\n\nTools: you cannot call registry tools natively here. Run `uv run python -m openjames.toolcli <tool> '<json args>'` "
+                 "(list them with the list_tools tool); it behaves exactly like the API tool call.")
+
+
+def run_chain(order: list[str], system: str, prompt: str, allowed=None, api_only: bool = False) -> tuple[str, str]:
+    """Try backends in order; return (backend_name, reply). api_only skips CLIs (they have no tool loop we control)."""
     errors = []
     for name in order:
+        mod = importlib.import_module(f"openjames.backends.{name}")
+        is_api = getattr(mod, "TOOL_LOOP", False)
+        if api_only and not is_api: continue
         try:
-            return name, importlib.import_module(f"openjames.backends.{name}").run(system, prompt)
+            if is_api: return name, mod.run(system, prompt, allowed)
+            return name, mod.run(system + CLI_TOOL_HINT, prompt)
         except (Unavailable, Exhausted) as e:
             errors.append(f"{name}: {e!r}")
     raise RuntimeError("all backends unavailable: " + "; ".join(errors))
