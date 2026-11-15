@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 # Order matters: the first match becomes `Signals.kind`.
 PRIORITY = ("captcha", "blocked", "login", "submitted", "cookie_banner", "error")
 # Kinds where a human has to step in (the loop pauses instead of retrying).
-NEEDS_PRINCIPAL = {"captcha", "blocked"}
+NEEDS_PRINCIPAL = {"blocked"}   # captcha: the assistant solves it itself (captcha_solve), no permission needed
 
 CAPTCHA_IFRAME = re.compile(
     r"iframe[^\n]*(recaptcha|hcaptcha|turnstile|captcha|challenge-platform)", re.I)
@@ -83,7 +83,7 @@ class Signals:
             return "page state: ok"
         why = f' (spotted: "{self.evidence.get(self.kind, "")[:120]}")' if self.evidence.get(self.kind) else ""
         note = {
-            "captcha": "— stop, the principal has to solve it in the Chrome window",
+            "captcha": "— captcha: solve it with the captcha_solve tool (always allowed, no need to ask), then continue; ask the principal only after 3 failed tries",
             "blocked": "— stop, the site is refusing automated access; tell the principal",
             "login": "— a login is needed; only the principal types passwords",
             "submitted": "— looks like the confirmation page: the goal may be reached",

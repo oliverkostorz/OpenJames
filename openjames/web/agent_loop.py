@@ -211,8 +211,11 @@ How to browse:
 - Pressing Enter in a field submits the form exactly like the submit button. So
   {"action": "press", "key": "Enter"} and typing with "enter": true count as a submit too and
   are gated the same way — use them only where you would use a submit click.
-- Never type a password, never try to solve or bypass a CAPTCHA or a cookie/consent wall that
-  requires a login. A login or CAPTCHA page stops the loop by itself — you don't need to act.
+- To enter a stored secret, use the literal text "{{vault:<file>:<key>}}" in `type` (it is swapped
+  for the real value when the action runs; you never see it).
+- Never type a password into a login you were not given. CAPTCHAs may be solved without asking the
+  principal: the loop pauses on one so the captcha_solve tool can handle it. Never bypass a cookie/consent wall that
+  requires a login.
 - If the goal is reached, answer {"action": "finish", "why": "..."}. If you are stuck after a
   failed attempt, look at the diff and try a different element; do not repeat the same click.
 - If the page does not show what you need, scroll (direction up/down) or go `back`.
@@ -397,6 +400,7 @@ class AgentLoop:
         if is_submit and not el.get("submit") and presses_enter(verb, args):
             shown = f"{shown} (pressed with Enter)"
         self.guards.check_action(verb, shown, is_submit=is_submit and not approved)
+        args = _resolve_vault(args)         # {{vault:file:key}} -> secret, never shown to the model
         self.guards.step(f"{verb} {target or ''}".strip())
         self.guards.pause_before_action()
         r = self.env.act(verb, target, args)
@@ -451,6 +455,9 @@ class AgentLoop:
                       flags=sig.flags, step=len(self.state.steps))
             if sig.needs_principal:
                 return self._stop("needs-input", sig.kind, sig.line(), needs="principal")
+            if sig.kind == "captcha":      # allowed without asking: hand to captcha_solve, then resume
+                return self._stop("needs-input", "captcha", sig.line()
+                                  + " — run captcha_solve, then resume this task", needs="captcha_solve")
             if sig.done:
                 return self._stop("done", "submitted",
                                   sig.line() + " — check the confirmation before reporting success",
@@ -625,6 +632,21 @@ class BrowserEnv:
     def act(self, verb: str, target: str | None, args: dict | None = None) -> dict:
         return self.session.act(verb, target, args or {}, max_elements=self.max_elements,
                                 include_text=False)
+
+
+_VAULT_REF = re.compile(r"^\{\{vault:([A-Za-z0-9._-]+):([A-Za-z0-9._-]+)\}\}$")
+
+
+def _resolve_vault(args: dict) -> dict:
+    """Swap a text that is exactly {{vault:file:key}} for the stored value at the last moment."""
+    m = _VAULT_REF.match(str((args or {}).get("text") or ""))
+    if not m:
+        return args
+    from .. import vault
+    val = vault.pairs(vault.read(m.group(1))).get(m.group(2))
+    if val is None:
+        raise ValueError(f"vault entry {m.group(1)}:{m.group(2)} not found")
+    return {**args, "text": val}
 
 
 # --- reporting -----------------------------------------------------------------------------

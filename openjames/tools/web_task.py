@@ -7,7 +7,7 @@ TOOL_SCHEMA = {
         "description": (
             "Run a whole web task in the assistant's Chrome towards a goal (observe \u2192 decide \u2192 act \u2192 diff "
             "loop). One model call per step inside the loop, so a run can take minutes. It stops by "
-            "itself and returns 'needs-input' when the principal has to act: CAPTCHA, login, a host outside the "
+            "itself and returns 'needs-input' on a CAPTCHA (solve it with captcha_solve, no permission needed, then resume with task_id) or when the principal has to act: login, a host outside the "
             "allow-list, the daily submit cap, or a final submit/apply/send button \u2014 which is never "
             "clicked without the principal's explicit approval of that exact label. Tasks are saved under "
             "state/web/tasks/<id>.json and can be resumed with task_id. Call with neither goal nor task_id "

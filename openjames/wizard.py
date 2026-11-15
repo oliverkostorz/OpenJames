@@ -26,6 +26,27 @@ def write_env(values: dict[str, str]):
     ENV.write_text("\n".join(lines) + "\n"); ENV.chmod(0o600)
 
 
+def gmail_step():
+    """Optional: create the assistant's Gmail account (human-paced, real Chrome, SMS code typed here)."""
+    from . import gmail_signup as g
+    print("\n3) Gmail account for the assistant (optional). It opens Chrome on this machine and signs up like a person;")
+    print("   one attempt per phone number. If Google asks for an ID/video check it stops and tells you.")
+    if input("   Create it now? [y/N] ").strip().lower() != "y": return
+    first, last = input("   First name: ").strip(), input("   Last name: ").strip()
+    user = input("   Preferred username (before @gmail.com): ").strip()
+    bday = input("   Your birthday YYYY-MM-DD: ").strip()
+    phone = input("   Phone number you control (+country code): ").strip()
+    if not all((first, last, user, bday, phone)): print("   incomplete, skipped."); return
+
+    def ask_code(prompt, timeout_s):
+        import select, sys
+        print(f"   {prompt} (waiting up to {timeout_s // 60} min, Enter on empty = give up)")
+        r, _, _ = select.select([sys.stdin], [], [], timeout_s)
+        return sys.stdin.readline().strip() if r else ""
+    r = g.signup(first, last, user, bday, phone, ask_code, say=lambda m: print("  ", m))
+    print(f"   -> {r['status']}" + (f": {r.get('why')}" if r.get("why") else f" ({r.get('username')}; password is in private/accounts/gmail.txt)"))
+
+
 def main():
     print("OpenJames setup. Nothing leaves this machine; secrets are stored in .env (mode 600, gitignored).")
     opts = []
@@ -65,4 +86,5 @@ def main():
             if v: env[k] = v
     if env: write_env(env)
     CONFIG.write_text(dump(cfg))
+    gmail_step()
     print(f"\nWrote {CONFIG.name} and .env. Next: `uv run openjames doctor`, then `uv run openjames deploy`.")
