@@ -23,6 +23,7 @@ All channels are polled: no public URL, tunnel or webhook.
 | Channel | Secrets in `.env` | One-time human step | Headless-friendly |
 |---|---|---|---|
 | telegram | `TELEGRAM_BOT_TOKEN` | create bot with @BotFather, message it once | yes |
+| ntfy | `NTFY_TOPIC_IN`, `NTFY_TOPIC_OUT` (optional `NTFY_SERVER`, `NTFY_TOKEN`) | pick two long random topic names, subscribe to OUT in the ntfy app | yes |
 | matrix | `MATRIX_HOMESERVER`, `MATRIX_ACCESS_TOKEN` | bot account, invite to an unencrypted DM | yes |
 | discord | `DISCORD_BOT_TOKEN` | create app + bot, share a server, DM it | yes |
 | slack | `SLACK_BOT_TOKEN` | create app with scopes, install to workspace | yes |
@@ -37,7 +38,7 @@ Status: all channels are covered by mocked tests; only some have run live (see C
 ## How it works
 `listener` (always on, no model calls) polls your active channels, accepts only allow-listed senders, writes `inbox/*.md`, and starts the `orchestrator`, which runs one task through your backend chain (first working backend in your priority order) and writes `outbox/*.md`, which the listener sends back.
 
-- **Channels** (pick any, all polling, no webhook): telegram (id auto-detected in the wizard), email (IMAP/SMTP hosts derived from your address, DMARC-checked), discord, slack, matrix, whatsapp + sms (one Twilio account), signal (signal-cli), imessage (macOS). `doctor` live-checks each credential.
+- **Channels** (pick any, all polling, no webhook): telegram (id auto-detected in the wizard), email (IMAP/SMTP hosts derived from your address, DMARC-checked), discord, slack, matrix, ntfy, whatsapp + sms (one Twilio account), signal (signal-cli), imessage (macOS). `doctor` live-checks each credential.
 - **Backends** (pick any, order = fallback): claude_code, codex, gemini (subscription CLIs), openrouter, anthropic_api (paid keys)
 - **Tools**: auto-discovered from `openjames/tools/`; the `create_tool` tool lets it write new ones. Built in, so a fresh install needs no self-teaching:
   `notify_principal`, `ask_principal` (question queue), `timer` (one-off/recurring reminders and follow-ups), `gen_password` / `store_secret` / `secret_use` (credential vault in `private/`, values never echoed),

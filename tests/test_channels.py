@@ -57,6 +57,18 @@ def mx(m, u, k):
 matrix.call = fake(mx); mt = matrix.Matrix(); assert mt.poll() == []     # first sync = history
 assert [(m.sender, m.text) for m in mt.poll()] == [("@me:h", "hey")] and mt.rooms["@me:h"] == "!r:h"
 
+from openjames.channels import ntfy
+class NR:
+    def __init__(s, t=""): s.text = t
+    def raise_for_status(s): pass
+sent = []
+def nreq(self, method, url, **kw):
+    if method == "POST": sent.append((url, kw["content"])); return NR()
+    return NR('{"id":"a1","event":"open"}\n{"id":"a2","event":"message","message":"ping"}\n')
+ntfy.Ntfy._req = nreq; os.environ.update(NTFY_TOPIC_IN="in1", NTFY_TOPIC_OUT="out1")
+nt = ntfy.Ntfy(); assert [(m.sender, m.text) for m in nt.poll()] == [("ntfy", "ping")] and nt.since == "a2"
+nt.send("ntfy", "x" * 8000); assert len(sent) == 3 and sent[0][0].endswith("/out1")
+
 import datetime as dt
 now = dt.datetime.now(dt.timezone.utc).strftime("%a, %d %b %Y %H:%M:%S %z")
 _twilio.call = fake(lambda m, u, k: {"messages": [{"sid": "1", "direction": "inbound", "from": "whatsapp:+49", "body": "w", "date_sent": now}]})
