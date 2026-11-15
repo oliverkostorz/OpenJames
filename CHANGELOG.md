@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-11-15)
 
 ### Added
 - Channels: Telegram, Discord, Slack, Matrix, Twilio SMS/WhatsApp, Signal, iMessage, email, and ntfy (two topics, no account).
@@ -20,7 +20,7 @@
 - [x] ntfy channel live-tested (check/poll/dedupe/chunked send)
 - [x] End-to-end dogfood: ntfy -> listener -> orchestrator -> outbox
 - [x] `doctor` and `deploy` render verified in a clean copy
-- [ ] Oliver reviews local commits
-- [ ] Push to GitHub and confirm CI passes
+- [x] Oliver reviews local commits
+- [x] Push to GitHub (CI result: see Actions)
 - [ ] Live send-back of outbox reply via listener (covered only by mocks)
-- [ ] Tag v0.1.0
+- [x] Tag v0.1.0
