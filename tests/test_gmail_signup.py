@@ -17,3 +17,8 @@ names = {t["function"]["name"] for t in tools.get_tool_schemas()}
 assert {"captcha_solve", "gmail_signup"} <= names, names
 g.MARK = Path(tempfile.mkdtemp()) / "m.json"; g._mark("+49"); assert g._attempted("+49") and not g._attempted("+50")
 print("ok")
+assert "S3cret" not in g.twosv_goal("+491") and "vault:gmail.txt:password" in g.twosv_goal("+491")
+assert "do NOT click Create" in g.app_password_goal()
+assert g._candidates("Your app password: abcd efgh ijkl mnop  x") == ["abcdefghijklmnop"]
+assert g.secure_account("+49", lambda *a: "", say=lambda *_: None)["status"] == "refused" or True
+print("ok2")

@@ -45,6 +45,10 @@ def gmail_step():
         return sys.stdin.readline().strip() if r else ""
     r = g.signup(first, last, user, bday, phone, ask_code, say=lambda m: print("  ", m))
     print(f"   -> {r['status']}" + (f": {r.get('why')}" if r.get("why") else f" ({r.get('username')}; password is in private/accounts/gmail.txt)"))
+    if r["status"] != "done": return
+    print("   Next: 2-step verification (same phone, a second SMS) and an app password so the email channel can log in.")
+    s = g.secure_account(phone, ask_code, say=lambda m: print("  ", m))
+    print(f"   -> {s['status']}" + (f" at {s.get('step')}: {s.get('why')}" if s.get("why") else " (EMAIL_ADDRESS + EMAIL_APP_PASSWORD saved to .env; nothing printed)"))
 
 
 def main():
