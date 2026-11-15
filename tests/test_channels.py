@@ -64,3 +64,23 @@ from openjames.channels import whatsapp
 w = whatsapp.WhatsApp(); w.started -= dt.timedelta(minutes=1)
 assert [(m.sender, m.text) for m in w.poll()] == [("+49", "w")] and w.poll() == []
 print("ok")
+
+# voice memos: allow-listed sender only, transcript becomes the task text; no backend => honest note
+from openjames import media
+import openjames.channels.telegram as tg
+assert media.is_audio("a.ogg") and media.is_audio("x", "audio/mpeg") and not media.is_audio("a.pdf", "application/pdf")
+tmp = pathlib.Path(tempfile.mkdtemp()); tg.INBOX = tmp
+class R:
+    content = b"OggS"; 
+    def raise_for_status(self): pass
+tg.httpx.get = lambda *a, **k: R()
+tg.call = fake(lambda m, u, kw: {"result": [{"update_id": 9, "message": {"from": {"id": 42}, "voice": {"file_id": "f", "file_unique_id": "u"}}}]}
+               if "getUpdates" in u else {"result": {"file_path": "voice/f.oga"}})
+t = tg.Telegram(); t.bind(["42"])
+media.transcribe = lambda p: "buy milk"
+assert t.poll()[0].text == "[voice memo, transcribed]\nbuy milk" and list(tmp.glob("files/*.oga"))
+t = tg.Telegram(); t.bind(["7"]); t.offset = 0; assert t.poll() == [] and len(list(tmp.glob("files/*"))) == 1  # stranger: nothing fetched
+def nostt(p): raise RuntimeError("no speech-to-text backend")
+media.transcribe = nostt
+t = tg.Telegram(); t.bind(["42"]); assert "not transcribed" in t.poll()[0].text
+print("voice ok")

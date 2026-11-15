@@ -20,7 +20,7 @@ uv run openjames deploy    # render launchd/systemd unit; you review and install
 - **Tools**: auto-discovered from `openjames/tools/`; the `create_tool` tool lets it write new ones. Built in, so a fresh install needs no self-teaching:
   `notify_principal`, `ask_principal` (question queue), `timer` (one-off/recurring reminders and follow-ups), `gen_password` / `store_secret` / `secret_use` (credential vault in `private/`, values never echoed),
   `http_get` (safe read-only fetch), `web_observe` / `web_act` / `web_task` (real Chrome via CDP with human-like input, submit gate and domain/rate guards; drives your installed Chrome),
-  `subagent`, `delegate` (experts: researcher, memory-curator, web-operator), `memory`, `list_tools`, `create_tool`.
+  `subagent`, voice memos (Telegram voice/audio/video notes are transcribed via whisper.cpp, openai-whisper or OPENAI_API_KEY; see `openjames/media.py`), `delegate` (experts: researcher, memory-curator, web-operator), `memory`, `list_tools`, `create_tool`.
 
 ## Privacy
 Secrets live only in `.env` (mode 600), choices in `config.toml`; both and all runtime dirs are gitignored. Outbound text is secret-scanned, unknown senders are dropped, external content is treated as untrusted. No telemetry.
