@@ -4,13 +4,35 @@ An open-source personal AI assistant you talk to over your own chat channels. It
 
 Status: early (v0.2). Nine channels are implemented; none needs a public URL, tunnel or webhook (everything is polled).
 
-## Quick start
+## Quick start (about 5 minutes)
+Needs macOS or Linux, Python 3.12+ and [uv](https://docs.astral.sh/uv/). Chrome is only needed for the web tools.
 ```bash
+git clone <this repo> && cd OpenJames
 uv sync
-uv run openjames init      # wizard: pick channels, backends and fallback order, allowed principal, secrets
-uv run openjames doctor    # check the setup
-uv run openjames deploy    # render launchd/systemd unit; you review and install it
+uv run openjames init      # wizard: channels, backends + fallback order, your allowed id, secrets -> .env (mode 600)
+uv run openjames doctor    # live-checks every credential
+uv run openjames deploy    # renders a launchd/systemd unit; you review and install it
 ```
+1. In `init`, pick **one** channel to start (Telegram is the quickest) and **one** backend you already have (a subscription CLI such as `claude`, or an OpenRouter key).
+2. Message your bot from the account you allow-listed. The listener writes `inbox/*.md`, the orchestrator answers into `outbox/*.md`, and the listener sends it back.
+3. Add more channels later by re-running `init`; secrets go only to `.env`.
+
+## Channel matrix
+All channels are polled: no public URL, tunnel or webhook.
+
+| Channel | Secrets in `.env` | One-time human step | Headless-friendly |
+|---|---|---|---|
+| telegram | `TELEGRAM_BOT_TOKEN` | create bot with @BotFather, message it once | yes |
+| matrix | `MATRIX_HOMESERVER`, `MATRIX_ACCESS_TOKEN` | bot account, invite to an unencrypted DM | yes |
+| discord | `DISCORD_BOT_TOKEN` | create app + bot, share a server, DM it | yes |
+| slack | `SLACK_BOT_TOKEN` | create app with scopes, install to workspace | yes |
+| email | `EMAIL_*` (IMAP/SMTP hosts derived from address) | app password / 2-step verification | yes |
+| sms | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | Twilio account + number (paid) | yes |
+| whatsapp | Twilio SID/token, `TWILIO_WHATSAPP_FROM` | join the Twilio sandbox from your phone | no |
+| signal | `SIGNAL_NUMBER` | install `signal-cli`, link or register a number | no |
+| imessage | none | macOS only, Full Disk Access for the job | no |
+
+Status: all channels are covered by mocked tests; only some have run live (see CHANGELOG once it exists).
 
 ## How it works
 `listener` (always on, no model calls) polls your active channels, accepts only allow-listed senders, writes `inbox/*.md`, and starts the `orchestrator`, which runs one task through your backend chain (first working backend in your priority order) and writes `outbox/*.md`, which the listener sends back.
