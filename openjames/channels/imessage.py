@@ -2,7 +2,7 @@ from . import Channel
 
 
 class IMessage(Channel):
-    \"\"\"Stub: implement poll()/send() per openjames/channels/__init__.py, then set implemented = True.\"\"\"
+    """Stub: implement poll()/send() per openjames/channels/__init__.py, then set implemented = True."""
     name = "imessage"
     env_keys = []
     platforms = ["darwin"]

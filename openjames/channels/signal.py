@@ -2,7 +2,7 @@ from . import Channel
 
 
 class Signal(Channel):
-    \"\"\"Stub: implement poll()/send() per openjames/channels/__init__.py, then set implemented = True.\"\"\"
+    """Stub: implement poll()/send() per openjames/channels/__init__.py, then set implemented = True."""
     name = "signal"
     env_keys = ["SIGNAL_NUMBER"]
     platforms = ["any"]

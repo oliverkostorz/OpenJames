@@ -2,7 +2,7 @@ from . import Channel
 
 
 class WhatsApp(Channel):
-    \"\"\"Stub: implement poll()/send() per openjames/channels/__init__.py, then set implemented = True.\"\"\"
+    """Stub: implement poll()/send() per openjames/channels/__init__.py, then set implemented = True."""
     name = "whatsapp"
     env_keys = ["WHATSAPP_ACCESS_TOKEN", "WHATSAPP_PHONE_ID"]
     platforms = ["any"]

@@ -2,7 +2,7 @@ from . import Channel
 
 
 class Sms(Channel):
-    \"\"\"Stub: implement poll()/send() per openjames/channels/__init__.py, then set implemented = True.\"\"\"
+    """Stub: implement poll()/send() per openjames/channels/__init__.py, then set implemented = True."""
     name = "sms"
     env_keys = ["SMS_PROVIDER_KEY"]
     platforms = ["any"]
