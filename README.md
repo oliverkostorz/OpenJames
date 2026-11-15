@@ -2,7 +2,7 @@
 
 An open-source personal AI assistant you talk to over your own chat channels. It runs a small orchestrator whenever a message arrives, uses tools and skills, learns new ones on demand, keeps its own memory, and fixes its own bugs. Your data stays on your machine.
 
-Status: early scaffold (v0.1). Telegram and email work in principle; WhatsApp, iMessage, SMS and Signal are stubs awaiting contributions.
+Status: early (v0.2). Nine channels are implemented; none needs a public URL, tunnel or webhook (everything is polled).
 
 ## Quick start
 ```bash
@@ -15,7 +15,7 @@ uv run openjames deploy    # render launchd/systemd unit; you review and install
 ## How it works
 `listener` (always on, no model calls) polls your active channels, accepts only allow-listed senders, writes `inbox/*.md`, and starts the `orchestrator`, which runs one task through your backend chain (first working backend in your priority order) and writes `outbox/*.md`, which the listener sends back.
 
-- **Channels** (pick any): telegram, email, whatsapp*, imessage* (macOS), sms*, signal* (*stub)
+- **Channels** (pick any, all polling, no webhook): telegram (id auto-detected in the wizard), email (IMAP/SMTP hosts derived from your address, DMARC-checked), discord, slack, matrix, whatsapp + sms (one Twilio account), signal (signal-cli), imessage (macOS). `doctor` live-checks each credential.
 - **Backends** (pick any, order = fallback): claude_code, codex, gemini (subscription CLIs), openrouter, anthropic_api (paid keys)
 - **Tools**: auto-discovered from `openjames/tools/`; the `create_tool` tool lets it write new ones.
 

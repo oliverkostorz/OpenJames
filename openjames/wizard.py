@@ -31,19 +31,27 @@ def main():
     opts = []
     for c in CHANNELS:
         ch = channels.get(c)
-        note = ("needs macOS " if "darwin" in ch.platforms and platform.system() != "Darwin" else "") + ("" if ch.implemented else "(stub, contributions welcome)")
+        note = "needs macOS" if "darwin" in ch.platforms and platform.system() != "Darwin" else ("no credentials" if not ch.env_keys else "")
         opts.append((c, note))
     chosen = pick("1) How should OpenJames talk to you? (pick one or more)", opts)
     cfg = Config(channels=chosen)
     env: dict[str, str] = {}
     for c in chosen:
         ch = channels.get(c)
-        who = input(f"\n[{c}] your id/address on this channel (only this principal is accepted): ").strip()
-        cfg.allowed_senders[c] = [who.lower()] if who else []
+        if ch.help: print(f"\n[{c}] {ch.help}")
         for k in ch.env_keys:
             if k not in os.environ and not (ENV.exists() and k + "=" in ENV.read_text()):
                 v = getpass.getpass(f"[{c}] {k} (hidden): ").strip()
                 if v: env[k] = v
+        who = ""
+        if type(ch).discover_sender is not channels.Channel.discover_sender:
+            os.environ.update(env)
+            print(f"[{c}] Waiting up to 2 min: send any message to your bot now to auto-detect your id (Enter to type it instead)...")
+            try: who = ch.discover_sender() or ""
+            except Exception as e: print(f"  auto-detect failed ({type(e).__name__})")
+            if who: print(f"  detected {who}")
+        if not who: who = input(f"[{c}] {ch.id_hint} (only this principal is accepted): ").strip()
+        cfg.allowed_senders[c] = [who.lower()] if who else []
     bopts = []
     for b in BACKENDS:
         m = importlib.import_module(f"openjames.backends.{b}")

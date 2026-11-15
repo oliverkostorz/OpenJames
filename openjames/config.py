@@ -7,7 +7,7 @@ import tomllib
 from dataclasses import dataclass, field
 from .paths import CONFIG
 
-CHANNELS = ["telegram", "email", "whatsapp", "imessage", "sms", "signal"]
+CHANNELS = ["telegram", "email", "whatsapp", "imessage", "sms", "signal", "discord", "slack", "matrix"]
 BACKENDS = ["claude_code", "codex", "gemini", "openrouter", "anthropic_api"]
 
 

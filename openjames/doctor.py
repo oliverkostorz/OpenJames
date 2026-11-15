@@ -1,4 +1,4 @@
-import shutil
+import os, shutil
 from dotenv import dotenv_values
 from . import channels
 from .config import load
@@ -11,7 +11,10 @@ def main():
     for c in cfg.channels:
         ch = channels.get(c)
         miss = [k for k in ch.env_keys if k not in env]
-        flag = "STUB" if not ch.implemented else ("missing " + ",".join(miss) if miss else "ok")
+        flag = "missing " + ",".join(miss) if miss else "ok"
+        if not miss:
+            os.environ.update({k: v for k, v in env.items() if v}); err = ch.check()
+            if err: flag = err
         bad += flag != "ok"; print(f"channel {c}: {flag}; allowed={len(cfg.allowed_senders.get(c, []))}")
     for b in cfg.backends:
         cli = {"claude_code": "claude", "codex": "codex", "gemini": "gemini"}.get(b)
