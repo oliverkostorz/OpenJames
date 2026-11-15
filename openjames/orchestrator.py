@@ -36,3 +36,7 @@ def main() -> int:
         print("already running"); return 0
     for task in sorted(INBOX.glob("*.md")): handle(task)
     return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

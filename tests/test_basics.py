@@ -20,4 +20,6 @@ cfg = config.Config(["telegram"], ["c", "a"], {"telegram": ["1"]})
 import tomllib; assert tomllib.loads(config.dump(cfg))["backends"]["priority"] == ["c", "a"]
 for c in config.CHANNELS:
     from openjames import channels; channels.get(c)
+import pathlib  # the listener starts `python -m openjames.orchestrator`; without a __main__ guard it silently does nothing
+assert '__name__ == "__main__"' in (pathlib.Path(__file__).resolve().parent.parent / "openjames" / "orchestrator.py").read_text()
 print("ok")
