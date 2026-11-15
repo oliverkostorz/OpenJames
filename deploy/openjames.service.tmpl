@@ -1,0 +1,10 @@
+[Unit]
+Description=OpenJames listener
+
+[Service]
+WorkingDirectory={{ROOT}}
+ExecStart={{PYTHON}} -m openjames.listener
+Restart=always
+
+[Install]
+WantedBy=default.target
