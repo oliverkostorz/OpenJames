@@ -34,8 +34,8 @@ class Slack(Channel):
             for m in reversed(_api("conversations.history", params={"channel": im["id"], "oldest": o, "limit": 20}).get("messages", [])):
                 self.oldest[im["id"]] = m["ts"]
                 if m.get("user") != im["user"] or m.get("bot_id"): continue
-                    text = media.join(m.get("text"), *[self._file(f) for f in m.get("files", [])])
-                    if text: out.append(Message("slack", im["user"], text))
+                text = media.join(m.get("text"), *[self._file(f) for f in m.get("files", [])])
+                if text: out.append(Message("slack", im["user"], text))
         return out
 
     def _file(self, f):
