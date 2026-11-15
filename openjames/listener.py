@@ -3,13 +3,13 @@ and start the orchestrator. No model calls here."""
 from __future__ import annotations
 import subprocess, sys, time, datetime as dt
 from dotenv import load_dotenv
-from . import channels
+from . import channels, timers
 from .config import load
 from .paths import ENV, INBOX, OUTBOX, ROOT
 
 
 def tick(chs, cfg):
-    new = False
+    new = timers.due() > 0
     for ch in chs:
         try: msgs = ch.poll()
         except Exception as e:                       # one broken channel must not silence the others
